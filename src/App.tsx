@@ -32,7 +32,7 @@ export default function App() {
   });
 
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    return sessionStorage.getItem('BINGX_IS_AUTHENTICATED') !== 'false';
+    return sessionStorage.getItem('BINGX_IS_AUTHENTICATED') === 'true';
   });
 
   const [status, setStatus] = useState<SystemStatus | null>(null);
@@ -49,7 +49,9 @@ export default function App() {
   const [isConfigOpen, setIsConfigOpen] = useState<boolean>(false);
   const [isLogsOpen, setIsLogsOpen] = useState<boolean>(false);
   const [isAccountsOpen, setIsAccountsOpen] = useState<boolean>(false);
-  const [isPasscodeOpen, setIsPasscodeOpen] = useState<boolean>(false);
+  const [isPasscodeOpen, setIsPasscodeOpen] = useState<boolean>(() => {
+    return sessionStorage.getItem('BINGX_IS_AUTHENTICATED') !== 'true';
+  });
   const [isSearchModalOpen, setIsSearchModalOpen] = useState<boolean>(false);
 
   // Sync theme
@@ -228,6 +230,9 @@ export default function App() {
   };
 
   const handleLockScreen = () => {
+    setIsAuthenticated(false);
+    sessionStorage.removeItem('BINGX_IS_AUTHENTICATED');
+    sessionStorage.removeItem('BINGX_USER_ROLE');
     setIsPasscodeOpen(true);
   };
 
