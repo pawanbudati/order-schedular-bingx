@@ -481,20 +481,20 @@ export const OrderForm: React.FC<OrderFormProps> = ({
 
             {/* Quick Percentage Position Sizing Buttons: 25%, 50%, 75%, 90%, 100% */}
             <div className="space-y-1.5 pt-1 border-t border-gray-800/80">
-              <div className="flex items-center justify-between text-[10px]">
+              <div className="flex flex-wrap items-center justify-between text-[10px] gap-1">
                 <span className="text-gray-400 font-bold">Quick Fund Allocation:</span>
-                <span className="text-amber-400 font-extrabold">
+                <span className="text-amber-400 font-extrabold truncate">
                   Max: {maxQuantity.toFixed(qtyPrecision)} {symbol.split('-')[0]} (~${maxNotionalUSD.toLocaleString(undefined, { maximumFractionDigits: 0 })} at {leverage}x)
                 </span>
               </div>
 
-              <div className="grid grid-cols-5 gap-1.5">
+              <div className="grid grid-cols-5 gap-1">
                 {[25, 50, 75, 90, 100].map((pct) => (
                   <button
                     key={pct}
                     type="button"
                     onClick={() => applyPercentQuantity(pct)}
-                    className="py-1.5 rounded-xl bg-[#111827] hover:bg-cyan-500/20 text-cyan-400 hover:text-cyan-300 border border-gray-700 hover:border-cyan-500/50 text-xs font-extrabold transition-all hover:scale-105 active:scale-95 shadow-sm"
+                    className="py-1.5 px-0.5 rounded-xl bg-[#111827] hover:bg-cyan-500/20 text-cyan-400 hover:text-cyan-300 border border-gray-700 hover:border-cyan-500/50 text-[10px] sm:text-xs font-extrabold transition-all hover:scale-105 active:scale-95 shadow-sm text-center"
                   >
                     {pct}%
                   </button>
@@ -545,9 +545,9 @@ export const OrderForm: React.FC<OrderFormProps> = ({
               />
 
               {/* Quick Leverage Presets Buttons */}
-              <div className="flex items-center justify-between gap-1 pt-1">
+              <div className="flex flex-wrap items-center justify-between gap-1 pt-1">
                 <span className="text-[10px] text-gray-500 font-mono">Presets:</span>
-                <div className="flex items-center space-x-1">
+                <div className="flex items-center flex-wrap gap-1 justify-end">
                   {getLeveragePresets(maxLeverageAllowed).map((lev) => (
                     <button
                       key={lev}
@@ -572,12 +572,12 @@ export const OrderForm: React.FC<OrderFormProps> = ({
         <div className="space-y-4">
           {/* Target Account Selection */}
           <div className="bg-[#0b0f19] p-3.5 rounded-xl border border-gray-800 space-y-2">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-1.5">
               <label className="text-xs font-semibold text-gray-300 flex items-center space-x-1.5">
                 <Layers className="w-4 h-4 text-cyan-400" />
                 <span>Target Accounts for Parallel Dispatch</span>
               </label>
-              <div className="flex items-center space-x-2 text-xs">
+              <div className="flex items-center space-x-1.5 text-xs">
                 <button
                   type="button"
                   onClick={() => setTargetMode('ALL')}
@@ -634,7 +634,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({
               <span className="text-[10px] text-cyan-400 font-mono">IST / UTC</span>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
                 <label className="block text-[10px] text-gray-400 mb-1">Target Date</label>
                 <input
@@ -646,15 +646,15 @@ export const OrderForm: React.FC<OrderFormProps> = ({
               </div>
 
               <div>
-                <label className="block text-[10px] text-gray-400 mb-1">Hours : Minutes : Seconds . MS</label>
-                <div className="flex items-center space-x-1 font-mono text-xs">
+                <label className="block text-[10px] text-gray-400 mb-1">HH : MM : SS . MS</label>
+                <div className="flex items-center flex-wrap sm:flex-nowrap gap-1 font-mono text-xs w-full">
                   <input
                     type="number"
                     min="0"
                     max="23"
                     value={hours}
                     onChange={(e) => setHours(e.target.value)}
-                    className="w-10 text-center bg-[#111827] border border-gray-700 text-cyan-400 rounded-lg p-1.5 outline-none"
+                    className="w-9 sm:w-10 text-center bg-[#111827] border border-gray-700 text-cyan-400 rounded-lg p-1.5 outline-none"
                   />
                   <span>:</span>
                   <input
@@ -663,7 +663,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                     max="59"
                     value={minutes}
                     onChange={(e) => setMinutes(e.target.value)}
-                    className="w-10 text-center bg-[#111827] border border-gray-700 text-cyan-400 rounded-lg p-1.5 outline-none"
+                    className="w-9 sm:w-10 text-center bg-[#111827] border border-gray-700 text-cyan-400 rounded-lg p-1.5 outline-none"
                   />
                   <span>:</span>
                   <input
@@ -672,13 +672,13 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                     max="59"
                     value={seconds}
                     onChange={(e) => setSeconds(e.target.value)}
-                    className="w-10 text-center bg-[#111827] border border-gray-700 text-cyan-400 rounded-lg p-1.5 outline-none"
+                    className="w-9 sm:w-10 text-center bg-[#111827] border border-gray-700 text-cyan-400 rounded-lg p-1.5 outline-none"
                   />
                   <span>.</span>
                   <select
                     value={milliseconds}
                     onChange={(e) => setMilliseconds(e.target.value)}
-                    className="bg-[#111827] border border-gray-700 text-amber-400 font-bold rounded-lg px-1.5 py-1.5 outline-none text-xs font-mono cursor-pointer"
+                    className="bg-[#111827] border border-gray-700 text-amber-400 font-bold rounded-lg px-1 py-1.5 outline-none text-xs font-mono cursor-pointer"
                   >
                     <option value="000">.000 ms</option>
                     <option value="100">.100 ms</option>
@@ -697,9 +697,9 @@ export const OrderForm: React.FC<OrderFormProps> = ({
             </div>
 
             {/* Quick Offset Buttons */}
-            <div className="flex items-center justify-between gap-1 pt-1">
+            <div className="flex flex-wrap items-center justify-between gap-1 pt-1">
               <span className="text-[10px] text-gray-500 font-mono">Presets:</span>
-              <div className="flex items-center space-x-1">
+              <div className="flex items-center flex-wrap gap-1 justify-end">
                 {[5, 10, 30, 60, 300].map((sec) => (
                   <button
                     key={sec}
@@ -715,14 +715,14 @@ export const OrderForm: React.FC<OrderFormProps> = ({
           </div>
 
           {/* Execution Action Buttons */}
-          <div className="grid grid-cols-2 gap-3 pt-2">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3 pt-2">
             <button
               type="button"
               disabled={isSubmitting}
               onClick={() => handleSubmit(false)}
-              className="py-3.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs transition-all shadow-lg shadow-cyan-500/25 flex items-center justify-center space-x-2 disabled:opacity-50"
+              className="py-3 sm:py-3.5 px-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-[11px] sm:text-xs transition-all shadow-lg shadow-cyan-500/25 flex items-center justify-center space-x-1.5 disabled:opacity-50 min-h-[44px]"
             >
-              <Clock className="w-4 h-4" />
+              <Clock className="w-4 h-4 shrink-0" />
               <span>SCHEDULE ORDER</span>
             </button>
 
@@ -730,9 +730,9 @@ export const OrderForm: React.FC<OrderFormProps> = ({
               type="button"
               disabled={isSubmitting}
               onClick={() => handleSubmit(true)}
-              className="py-3.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs transition-all shadow-lg shadow-amber-600/25 flex items-center justify-center space-x-2 disabled:opacity-50"
+              className="py-3 sm:py-3.5 px-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-[11px] sm:text-xs transition-all shadow-lg shadow-amber-600/25 flex items-center justify-center space-x-1.5 disabled:opacity-50 min-h-[44px]"
             >
-              <Zap className="w-4 h-4" />
+              <Zap className="w-4 h-4 shrink-0" />
               <span>EXECUTE NOW</span>
             </button>
           </div>
