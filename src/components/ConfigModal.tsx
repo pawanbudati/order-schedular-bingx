@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Settings, Server, Shield, CheckCircle2 } from 'lucide-react';
 import { SystemStatus } from '../types';
+import { getBackendUrl } from '../services/api';
 
 interface ConfigModalProps {
   isOpen: boolean;
@@ -9,14 +10,18 @@ interface ConfigModalProps {
 }
 
 export const ConfigModal: React.FC<ConfigModalProps> = ({ isOpen, onClose, status }) => {
-  const [apiUrl, setApiUrl] = useState<string>('http://localhost:8445');
+  const [apiUrl, setApiUrl] = useState<string>(() => getBackendUrl());
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   if (!isOpen) return null;
 
   const handleSave = () => {
+    localStorage.setItem('BINGX_BACKEND_URL', apiUrl);
     setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 3000);
+    setTimeout(() => {
+      setSaveSuccess(false);
+      window.location.reload();
+    }, 1200);
   };
 
   return (
@@ -44,7 +49,7 @@ export const ConfigModal: React.FC<ConfigModalProps> = ({ isOpen, onClose, statu
           {saveSuccess && (
             <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 p-3 rounded-xl flex items-center space-x-2">
               <CheckCircle2 className="w-4 h-4" />
-              <span>Configuration saved successfully!</span>
+              <span>Configuration saved! Reloading connection...</span>
             </div>
           )}
 

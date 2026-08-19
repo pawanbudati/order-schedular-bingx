@@ -8,8 +8,9 @@ export default defineConfig({
     port: 5174,
     proxy: {
       '/api': {
-        target: 'http://localhost:8445',
+        target: 'https://order-schedular-bingx.duckdns.org',
         changeOrigin: true,
+        secure: false,
       },
     },
   },
