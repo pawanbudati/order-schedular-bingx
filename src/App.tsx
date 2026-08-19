@@ -20,6 +20,8 @@ import {
   InstrumentContract,
 } from './types';
 
+const DEFAULT_SESSION_EXPIRY_MS = 4 * 60 * 60 * 1000; // 4 Hours default
+
 export default function App() {
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     const saved = localStorage.getItem('BINGX_THEME');
@@ -32,7 +34,13 @@ export default function App() {
   });
 
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    return sessionStorage.getItem('BINGX_IS_AUTHENTICATED') === 'true';
+    const savedAuth = sessionStorage.getItem('BINGX_IS_AUTHENTICATED') === 'true';
+    const savedTime = sessionStorage.getItem('BINGX_AUTH_TIMESTAMP');
+    const expiryMs = Number(sessionStorage.getItem('BINGX_AUTH_EXPIRY_MS')) || DEFAULT_SESSION_EXPIRY_MS;
+    if (savedAuth && savedTime && Date.now() - Number(savedTime) < expiryMs) {
+      return true;
+    }
+    return false;
   });
 
   const [status, setStatus] = useState<SystemStatus | null>(null);
@@ -50,7 +58,10 @@ export default function App() {
   const [isLogsOpen, setIsLogsOpen] = useState<boolean>(false);
   const [isAccountsOpen, setIsAccountsOpen] = useState<boolean>(false);
   const [isPasscodeOpen, setIsPasscodeOpen] = useState<boolean>(() => {
-    return sessionStorage.getItem('BINGX_IS_AUTHENTICATED') !== 'true';
+    const savedAuth = sessionStorage.getItem('BINGX_IS_AUTHENTICATED') === 'true';
+    const savedTime = sessionStorage.getItem('BINGX_AUTH_TIMESTAMP');
+    const expiryMs = Number(sessionStorage.getItem('BINGX_AUTH_EXPIRY_MS')) || DEFAULT_SESSION_EXPIRY_MS;
+    return !(savedAuth && savedTime && Date.now() - Number(savedTime) < expiryMs);
   });
   const [isSearchModalOpen, setIsSearchModalOpen] = useState<boolean>(false);
 
@@ -71,11 +82,29 @@ export default function App() {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   };
 
+  // Session expiry checker
+  const checkSessionExpiry = useCallback(() => {
+    const savedAuth = sessionStorage.getItem('BINGX_IS_AUTHENTICATED') === 'true';
+    const savedTime = sessionStorage.getItem('BINGX_AUTH_TIMESTAMP');
+    const expiryMs = Number(sessionStorage.getItem('BINGX_AUTH_EXPIRY_MS')) || DEFAULT_SESSION_EXPIRY_MS;
+
+    if (savedAuth && savedTime && Date.now() - Number(savedTime) >= expiryMs) {
+      console.warn('Authentication session expired after configured duration.');
+      sessionStorage.clear();
+      setIsAuthenticated(false);
+      setUserRole('ADMIN');
+      setIsPasscodeOpen(true);
+    }
+  }, []);
+
   // Fetch status & clock sync
   const fetchStatus = useCallback(async () => {
     try {
       const data = await api.getStatus();
       setStatus(data);
+      if (data && (data as any).authExpiryMs) {
+        sessionStorage.setItem('BINGX_AUTH_EXPIRY_MS', (data as any).authExpiryMs.toString());
+      }
     } catch (err) {
       console.warn('Failed to fetch BingX status:', err);
     }
@@ -149,22 +178,26 @@ export default function App() {
 
   // Initial load
   useEffect(() => {
+    checkSessionExpiry();
     fetchStatus();
     fetchAccounts();
     fetchTickers();
     fetchInstruments();
     fetchOrders();
     fetchLogs();
-  }, [fetchStatus, fetchAccounts, fetchTickers, fetchInstruments, fetchOrders, fetchLogs]);
+  }, [checkSessionExpiry, fetchStatus, fetchAccounts, fetchTickers, fetchInstruments, fetchOrders, fetchLogs]);
 
   // Balance load when account changes
   useEffect(() => {
     fetchBalance();
   }, [fetchBalance]);
 
-  // Periodic polling loops
+  // Periodic polling loops & expiry check
   useEffect(() => {
-    const statusInterval = setInterval(fetchStatus, 10000);
+    const statusInterval = setInterval(() => {
+      checkSessionExpiry();
+      fetchStatus();
+    }, 10000);
     const tickersInterval = setInterval(fetchTickers, 2000);
     const ordersInterval = setInterval(fetchOrders, 1000);
     return () => {
@@ -172,40 +205,56 @@ export default function App() {
       clearInterval(tickersInterval);
       clearInterval(ordersInterval);
     };
-  }, [fetchStatus, fetchTickers, fetchOrders]);
+  }, [checkSessionExpiry, fetchStatus, fetchTickers, fetchOrders]);
+
+  // Guest Mode Permission Guard
+  const checkAdminPermission = (): boolean => {
+    if (userRole !== 'ADMIN') {
+      alert('🔒 Guest Mode Active (Read-Only)\n\nYou can view balances, orders, and logs, but Admin PIN authentication is required to execute or modify orders and account settings.');
+      setIsPasscodeOpen(true);
+      return false;
+    }
+    return true;
+  };
 
   // Actions
   const handleScheduleOrder = async (req: ScheduledOrderRequest) => {
+    if (!checkAdminPermission()) return;
     await api.scheduleOrder(req);
     await fetchOrders();
     await fetchLogs();
   };
 
   const handleExecuteNow = async (id: string) => {
+    if (!checkAdminPermission()) return;
     await api.executeOrderNow(id);
     await fetchOrders();
     await fetchLogs();
   };
 
   const handleCancelOrder = async (id: string) => {
+    if (!checkAdminPermission()) return;
     await api.deleteOrder(id);
     await fetchOrders();
     await fetchLogs();
   };
 
   const handleSaveAccount = async (accountData: Partial<BingXAccountConfig>) => {
+    if (!checkAdminPermission()) return;
     await api.saveAccount(accountData);
     await fetchAccounts();
     await fetchBalance();
   };
 
   const handleDeleteAccount = async (id: string) => {
+    if (!checkAdminPermission()) return;
     await api.deleteAccount(id);
     await fetchAccounts();
     await fetchBalance();
   };
 
   const handleClearLogs = async () => {
+    if (!checkAdminPermission()) return;
     await api.clearLogs();
     await fetchLogs();
   };
@@ -213,10 +262,13 @@ export default function App() {
   const handleAuthenticateAdmin = async (enteredPin: string) => {
     const res = await api.verifyPasscode(enteredPin);
     if (res.success) {
+      const expiryMs = (res as any).authExpiryMs || DEFAULT_SESSION_EXPIRY_MS;
       setUserRole('ADMIN');
       setIsAuthenticated(true);
       sessionStorage.setItem('BINGX_USER_ROLE', 'ADMIN');
       sessionStorage.setItem('BINGX_IS_AUTHENTICATED', 'true');
+      sessionStorage.setItem('BINGX_AUTH_TIMESTAMP', Date.now().toString());
+      sessionStorage.setItem('BINGX_AUTH_EXPIRY_MS', expiryMs.toString());
       return { success: true, message: 'Admin authenticated' };
     }
     return { success: false, message: res.message || 'Invalid PIN' };
@@ -227,12 +279,14 @@ export default function App() {
     setIsAuthenticated(true);
     sessionStorage.setItem('BINGX_USER_ROLE', 'GUEST');
     sessionStorage.setItem('BINGX_IS_AUTHENTICATED', 'true');
+    sessionStorage.setItem('BINGX_AUTH_TIMESTAMP', Date.now().toString());
+    sessionStorage.setItem('BINGX_AUTH_EXPIRY_MS', DEFAULT_SESSION_EXPIRY_MS.toString());
   };
 
   const handleLockScreen = () => {
+    sessionStorage.clear();
     setIsAuthenticated(false);
-    sessionStorage.removeItem('BINGX_IS_AUTHENTICATED');
-    sessionStorage.removeItem('BINGX_USER_ROLE');
+    setUserRole('ADMIN');
     setIsPasscodeOpen(true);
   };
 
